@@ -81,6 +81,8 @@ fmt_scan: db "%d",0
 i: dw 0 ; Variable qui va servir pour les boucles
 j: dw 0 ; Variable qui va servir pour les boucles
 
+flag: db 0 ; Variable qui va servir pour éviter le bug qui exécute 2 fois notre code dessin et quui fait une erreur de segmentation à cause de la gestion des évènements
+
 section .text
 	
 ;##################################################
@@ -153,6 +155,12 @@ jmp boucle
 ;#########################################
 push rbp ; Pour faire fonctionner le printf et le scanf il faut push rbp et pop rbp autour de notre code, c'est pour ça que c'est ici. Le pop rbp est à la ligne 257.
 dessin:
+
+; Si le flag est à 1 alors on saute à la fin de notre code pour éviter de dessiner 2 fois (erreur de segmentation)
+cmp byte[flag],1
+je flush
+
+mov byte[flag],1 ; On met le flag à 1 
 
 ; On demande à l'utilisateur si il veut que le nombre de foyer et soit déterminé aléatoirement
 foyerRandomYesOrNo:
@@ -377,6 +385,7 @@ boucleExplorePoints:
 flush:
 mov rdi, qword[display_name]
 call XFlush
+jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
 mov rax,34
 syscall
 
