@@ -34,6 +34,7 @@ extern exit
 
 section .bss
 
+; Les variables non initialisées du prof
 display_name:	resq	1
 screen:			resd	1
 depth:         	resd	1
@@ -44,30 +45,26 @@ window:		resq	1
 gc:		resq	1
 
 
-
+; Nos variables non initialisées
 coordFoyersX: resw 200
 coordFoyersY: resw 200
-
-
 coordPointsX: resw 30000
 coordPointsY: resw 30000
-
 
 nbFoyer: resw 1
 nbPoints: resw 1
 reponse: resb 1
 
-
-
 section .data
 
+; Les variables initialisées du prof
 event:		times	24 dq 0
-
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
 y2:	dd	0
 
+; Nos variables initialisées
 colors: dd 0x9400d3, 0x7c1ddc, 0x653ae5, 0x4d56ed, 0x3673f6, 0x1e90ff
 
 maxFoyer: dw 200
@@ -82,10 +79,6 @@ reponseValeurRandomFoyer: db "Le nombre de foyer est de : %d",10,0
 reponseValeurRandomPoints: db "Le nombre de points est de : %d",10,0
 fmt_scan: db "%d",0
 
-test1: db "foyer x : %d",10,0
-test2: db "foyer y : %d",10,0
-
-test: db 0
 i: dw 0
 j: dw 0
 
@@ -162,9 +155,6 @@ jmp boucle
 push rbp
 dessin:
 
-cmp byte[test],0
-jne TEST
-
 foyerRandomYesOrNo:
 
 mov rdi,demandeSiFoyerRandom
@@ -177,7 +167,18 @@ mov rax,0
 call scanf
 
 cmp byte[reponse],1
-je foyerRandomYes
+jne foyerRandomNo
+
+foyerRandomYes :
+
+
+mov di,word[maxFoyer]
+call random
+inc ax
+mov word[nbFoyer],ax
+
+jmp pointsRandomYesOrNo
+
 
 
 foyerRandomNo:
@@ -198,14 +199,7 @@ mov ax,word[maxFoyer]
 cmp word[nbFoyer],ax
 jg foyerRandomNo
 
-jmp pointsRandomYesOrNo
 
-foyerRandomYes :
-
-
-mov di,word[maxFoyer]
-call random
-mov word[nbFoyer],ax
 
 
 pointsRandomYesOrNo:
@@ -214,15 +208,22 @@ mov rdi,demandeSiPointsRandom
 mov rax,0
 call printf
 
-
-
 mov rdi,fmt_scan
 mov rsi,reponse
 mov rax,0
 call scanf
 
 cmp byte[reponse],1
-je pointsRandomYes
+jne pointsRandomNo
+
+pointsRandomYes:
+
+mov di,word[maxPoint]
+call random
+inc ax
+mov word[nbPoints],ax
+
+jmp affichageValeurs
 
 pointsRandomNo:
 
@@ -242,14 +243,6 @@ mov ax,word[maxPoint]
 cmp word[nbPoints],ax
 jg pointsRandomNo
 
-jmp affichageValeurs
-
-
-pointsRandomYes:
-
-mov di,word[maxPoint]
-call random
-mov word[nbPoints],ax
 
 affichageValeurs:
 
@@ -279,8 +272,6 @@ boucleInitCoordFoyers:
     call random
     mov word[coordFoyersY+rsi*WORD],ax
 
-    
-
     inc word[i]
 
     mov ax,word[i]
@@ -289,8 +280,6 @@ boucleInitCoordFoyers:
 
 mov word[i],0
 
-
-
 boucleInitCoordPoints:
 
     movzx rsi,word[i]
@@ -298,13 +287,10 @@ boucleInitCoordPoints:
     mov di,400
     call random
     mov word[coordPointsX+rsi*WORD],ax
-    
 
     mov di,400
     call random
     mov word[coordPointsY+rsi*WORD],ax
-
-   
 
     inc word[i]
 
@@ -327,25 +313,18 @@ boucleExplorePoints:
 
     mov dword[minDistance],400
 
-   
-
     boucleExploreFoyers:
 
         movzx esi,word[j]
-        
-
-
-        
+         
         movzx edi,word[coordFoyersX+esi*WORD]
         movzx esi,word[coordFoyersY+esi*WORD]
         movzx edx,word[x1]
         movzx ecx,word[y1]
         
-        
         call calculDistance
 
         movzx esi,word[j]
-
         
         cmp eax,dword[minDistance]
         jb ifDistanceInf
@@ -361,8 +340,6 @@ boucleExplorePoints:
         movzx eax,word[coordFoyersY+esi*WORD]
         mov dword[y2],eax
 
-       
-
         incJ:
 
         inc word[j]
@@ -371,42 +348,16 @@ boucleExplorePoints:
         cmp ax,word[nbFoyer]
         jb boucleExploreFoyers
 
-    
-  
-
-    ; push rbp
-    ; mov rdi,test1
-    ; movzx rsi,word[coordFoyersX]
-    ; mov rax,0
-    ; call printf
-
-    ; mov rdi,test2
-    ; movzx rsi,word[coordFoyersY]
-    ; mov rax,0
-    ; call printf
-
-    ; mov rdi,test1
-    ; movzx rsi,word[x2]
-    ; mov rax,0
-    ; call printf
-
-    ; mov rdi,test2
-    ; movzx rsi,word[y2]
-    ; mov rax,0
-    ; call printf
-    ; pop rbp
 
     mov di,6
-    call random
+    call random ; On génére un nombre aléatoire entre 0 et 5 afin de choisir une couleur aléatoire dans le tableau colors
     
-    mov ebx,dword[colors+eax*DWORD]
-
+    mov ebx,dword[colors+eax*DWORD] ; On stocke la couleur dans ebx
 
     mov rdi,qword[display_name]
     mov rsi,qword[gc]
     mov edx, ebx	
-    call XSetForeground
-
+    call XSetForeground ; On change la couleur pour la couleur choisie aléatoirement
 
     mov rdi,qword[display_name]
     mov rsi,qword[window]
@@ -425,52 +376,10 @@ boucleExplorePoints:
 
 
 
-; mov word[i],0
-    
-;     push rbp
-
-;     TESTBOUCLE:
-
-;         movzx rbx, word[i]
-
-;         mov rdi,test1
-;         movzx rsi,word[coordFoyersX+rbx*WORD]
-;         mov rax,0
-;         call printf
-
-        
-;         mov rdi,test2
-;         movzx rsi,word[coordFoyersY+rbx*WORD]
-;         mov rax,0
-;         call printf
-
-;         inc word[i]
-
-;         mov ax,word[i]
-;         cmp ax,word[nbFoyer]
-;         jb TESTBOUCLE
-
-
-
-;         pop rbp
-
-
-; ############################
-; # FIN DE LA ZONE DE DESSIN #
-; ############################
-
-inc byte[test]
-
-TEST:
-
-; ICI SUPP FLUSH CAR ASKIP SOURCE PB SEGMENTATION CAR APPEL 2 EVENTS QUAND LANCE PROGRAMME DUCOUP ENLEVER LE TRUC TEST
-
-jmp flush
 
 flush:
-mov rdi,qword[display_name] ; TEMPORAIREMENT ENLEVE CAR FAIT ERREUR DE SEGMENTATION, retourne en haut et re exécute tout ????
+mov rdi,qword[display_name] 
 call XFlush
-jmp boucle
 mov rax,34
 syscall
 
@@ -513,26 +422,10 @@ mul eax
 
 add ebx,eax ; en gros j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
 
-; jsuis vraiment pas sur de comment calculer la racine carrée lol
+cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
+sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
 
-mov ecx, 0
-xor rax,rax
-
-boucleRacineCarrée:
-
-inc ecx
-
-mov eax,ecx
-mul eax
-
-cmp eax,ebx
-jg finBoucleRacineCarrée
-
-jmp boucleRacineCarrée
-
-finBoucleRacineCarrée :
-sub ecx,1
-mov eax,ecx
+cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
 
 
 ret
