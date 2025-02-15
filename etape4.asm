@@ -33,7 +33,7 @@ extern exit
 %define BYTE	1
 
 section .bss
-
+; Les variables non initialisées du prof
 display_name:	resq	1
 screen:			resd	1
 depth:         	resd	1
@@ -44,49 +44,43 @@ window:		resq	1
 gc:		resq	1
 
 
-
+; Nos variables non initialisées
 coordFoyersX: resw 200
 coordFoyersY: resw 200
-
-foyerColor: resd 200
-
-coordPointsX: resw 30000
-coordPointsY: resw 30000
+foyerColor: resd 200 ; Tableau qui contiendra la couleur de chaque foyer
+coordPointsX: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
+coordPointsY: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
 
 
 nbFoyer: resw 1
 reponse: resb 1
 
-
-
 section .data
 
+; Les variables initialisées du prof
 event:		times	24 dq 0
-
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
 y2:	dd	0
 
-colors: dd 0xFF5733, 0x33FF57, 0x3357FF, 0xFFD700, 0x8A2BE2, 0xFF69B4, 0x4B0082, 0x00FFFF, 0x7FFF00, 0xFF4500, 0x2E8B57, 0x9400D3, 0xFFB6C1, 0x4682B4, 0xA52A2A
+; Nos variables initialisées
+colors: dd 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0x800000, 0x808000, 0x008000, 0x800080, 0x008080, 0x000080, 0xC0C0C0, 0xFFA500, 0xA52A2A  
+
 maxFoyer: dw 200
 maxPoint: dw 30000
 minDistance: dd 0
+indiceFoyerMin : dw 0
 
 demandeSiFoyerRandom: db "Voulez-vous que le nombre de foyer soit déterminé aléatoirement (1 si oui, autre si non) : ",0
 demandeNbFoyer : db "Entrez le nombre de foyer (entre 1 et 200) : ",0
 reponseValeurRandomFoyer: db "Le nombre de foyer est de : %d",10,0
-reponseValeurRandomPoints: db "Le nombre de points est de : %d",10,0
 fmt_scan: db "%d",0
 
-test1: db "foyer x : %d",10,0
-test2: db "foyer y : %d",10,0
-
-test: db 0
 i: dw 0
 j: dw 0
 k: dw 0
-indiceFoyerMin : dw 0
+
 
 section .text
 	
@@ -161,9 +155,6 @@ jmp boucle
 push rbp
 dessin:
 
-cmp byte[test],0
-jne TEST
-
 foyerRandomYesOrNo:
 
 mov rdi,demandeSiFoyerRandom
@@ -176,8 +167,17 @@ mov rax,0
 call scanf
 
 cmp byte[reponse],1
-je foyerRandomYes
+jne foyerRandomNo
 
+foyerRandomYes :
+
+
+mov di,word[maxFoyer]
+call random
+inc ax
+mov word[nbFoyer],ax
+
+jmp affichageValeurs
 
 foyerRandomNo:
 
@@ -196,15 +196,6 @@ jl foyerRandomNo
 mov ax,word[maxFoyer]
 cmp word[nbFoyer],ax
 jg foyerRandomNo
-
-jmp affichageValeurs
-
-foyerRandomYes :
-
-
-mov di,word[maxFoyer]
-call random
-mov word[nbFoyer],ax
 
 
 
@@ -226,13 +217,10 @@ boucleInitCoordFoyers:
     mov di,400
     call random
     mov word[coordFoyersX+rsi*WORD],ax
-    
 
     mov di,400
     call random
     mov word[coordFoyersY+rsi*WORD],ax
-
-    
 
     inc word[i]
 
@@ -244,11 +232,9 @@ mov word[i],0
 
 boucleInitColorFoyers:
 
-    xor rsi,rsi
-
     movzx rsi,word[i]
 
-    mov di,20
+    mov di,25
     call random
     mov ebx,dword[colors+eax*DWORD]
     mov dword[foyerColor+rsi*DWORD],ebx
@@ -311,8 +297,7 @@ boucleExplorePointsX :
             movzx esi,word[coordFoyersY+esi*WORD]
             movzx edx,word[x1]
             movzx ecx,word[y1]
-            
-            
+
             call calculDistance
 
             movzx esi,word[k]
@@ -343,6 +328,7 @@ boucleExplorePointsX :
             cmp ax,word[nbFoyer]
             jb boucleExploreFoyers
 
+        
         movzx rax,word[indiceFoyerMin]
 
         mov rdi,qword[display_name]
@@ -372,58 +358,9 @@ boucleExplorePointsX :
     cmp ax,400
     jb boucleExplorePointsX
 
-
-
-    
-
-
-
-; mov word[i],0
-    
-;     push rbp
-
-;     TESTBOUCLE:
-
-;         movzx rbx, word[i]
-
-;         mov rdi,test1
-;         movzx rsi,word[coordFoyersX+rbx*WORD]
-;         mov rax,0
-;         call printf
-
-        
-;         mov rdi,test2
-;         movzx rsi,word[coordFoyersY+rbx*WORD]
-;         mov rax,0
-;         call printf
-
-;         inc word[i]
-
-;         mov ax,word[i]
-;         cmp ax,word[nbFoyer]
-;         jb TESTBOUCLE
-
-
-
-;         pop rbp
-
-
-; ############################
-; # FIN DE LA ZONE DE DESSIN #
-; ############################
-
-inc byte[test]
-
-TEST:
-
-; ICI SUPP FLUSH CAR ASKIP SOURCE PB SEGMENTATION CAR APPEL 2 EVENTS QUAND LANCE PROGRAMME DUCOUP ENLEVER LE TRUC TEST
-
-jmp flush
-
 flush:
 mov rdi,qword[display_name] ; TEMPORAIREMENT ENLEVE CAR FAIT ERREUR DE SEGMENTATION, retourne en haut et re exécute tout ????
 call XFlush
-jmp boucle
 mov rax,34
 syscall
 
@@ -466,26 +403,10 @@ mul eax
 
 add ebx,eax ; en gros j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
 
-; jsuis vraiment pas sur de comment calculer la racine carrée lol
+cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
+sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
 
-mov ecx, 0
-xor rax,rax
-
-boucleRacineCarrée:
-
-inc ecx
-
-mov eax,ecx
-mul eax
-
-cmp eax,ebx
-jg finBoucleRacineCarrée
-
-jmp boucleRacineCarrée
-
-finBoucleRacineCarrée :
-sub ecx,1
-mov eax,ecx
+cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
 
 
 ret
