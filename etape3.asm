@@ -82,6 +82,8 @@ fmt_scan: db "%d",0
 i: dw 0
 j: dw 0
 
+flag: db 0 ; Variable qui va servir pour éviter le bug qui exécute 2 fois notre code dessin et quui fait une erreur de segmentation à cause de la gestion des évènements
+
 section .text
 	
 ;##################################################
@@ -154,6 +156,12 @@ jmp boucle
 ;#########################################
 push rbp
 dessin:
+
+; Si le flag est à 1 alors on saute à la fin de notre code pour éviter de dessiner 2 fois (erreur de segmentation)
+cmp byte[flag],1
+je flush
+
+mov byte[flag],1 ; On met le flag à 1 
 
 foyerRandomYesOrNo:
 
@@ -380,6 +388,7 @@ boucleExplorePoints:
 flush:
 mov rdi,qword[display_name] 
 call XFlush
+jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
 mov rax,34
 syscall
 
