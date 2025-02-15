@@ -46,25 +46,19 @@ gc:		resq	1
 
 
 ; Nos variables non initialisées
-
 coordFoyersX: resw 200 ; Tableau qui contiendra les coordonnées x des foyers
 coordFoyersY: resw 200 ; Tableau qui contiendra les coordonnées y des foyers
-
 coordPointsX: resw 30000 ; Tableau qui contiendra les coordonnées x des points
 coordPointsY: resw 30000 ; Tableau qui contiendra les coordonnées y des points
 
-
 nbFoyer: resw 1 ; Nombre de foyers qu'on va utiliser, soit ce nombre sera généré aléatoirement soit l'utilisateur le rentrera. Valeur comprise entre 1 et 200
 nbPoints: resw 1 ; Nombre de points qu'on va utiliser, soit ce nombre sera généré aléatoirement soit l'utilisateur le rentrera. Valeur comprise entre 1 et 30000
-reponse: resb 1 ; Permet de stocker le résultat de nos scanf (je crois à vérif). Il faut vérifier si on ne peut pas la virer et passer les variables automatiquement en paramètre de scanf
-
-
+reponse: resb 1 ; Permet de stocker le résultat de certains de nos scanf (savoir si on va générer un nb aléatoire de foyers / points)
 
 section .data
 
 ; Les variables initialisées du prof
 event:		times	24 dq 0
-
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
@@ -83,7 +77,6 @@ demandeNbPoints : db "Entrez le nombre de points (entre 1 et 30000): ",0
 reponseValeurRandomFoyer: db "Le nombre de foyer est de : %d",10,0
 reponseValeurRandomPoints: db "Le nombre de points est de : %d",10,0
 fmt_scan: db "%d",0
-
 
 i: dw 0 ; Variable qui va servir pour les boucles
 j: dw 0 ; Variable qui va servir pour les boucles
@@ -158,7 +151,7 @@ jmp boucle
 ;#########################################
 ;#		DEBUT DE LA ZONE DE DESSIN		 # Ici c'est notre code ! C'est principalement de l'algo, on intervient sur la fenêtre uniquement afin de dessiner des lignes
 ;#########################################
-push rbp ; Pour faire fonctionner le printf et le scanf il faut push rbp et pop rbp autour de notre code, c'est pour ça que c'est ici. Le pop rbp est à la ligne 262.
+push rbp ; Pour faire fonctionner le printf et le scanf il faut push rbp et pop rbp autour de notre code, c'est pour ça que c'est ici. Le pop rbp est à la ligne 257.
 dessin:
 
 ; On demande à l'utilisateur si il veut que le nombre de foyer et soit déterminé aléatoirement
@@ -199,11 +192,11 @@ mov rax,0
 call scanf
 
 cmp word[nbFoyer],1
-jl foyerRandomNo
+jl foyerRandomNo ; on le renvoie chez sa mère
 
 mov ax,word[maxFoyer]
 cmp word[nbFoyer],ax
-jg foyerRandomNo
+jg foyerRandomNo ; t'essayes de nous niquer encore ? jsuis dans le train g pas ton temps
 
 
 
@@ -245,7 +238,9 @@ call scanf
 cmp word[nbPoints],1
 jl pointsRandomNo
 
-
+mov ax,word[maxPoint]
+cmp word[nbPoints],ax
+jg pointsRandomNo
 
 
 ; Ici on affiche le nombre de foyers et de points utilisés
@@ -261,8 +256,7 @@ movzx rsi,word[nbPoints]
 mov rax,0 
 call printf
 
-pop rbp
-
+pop rbp ; POP, bye bye les printfs
 
 
 ; Dans cette partie on va initialiser les coordonnées des foyers et des points : 
@@ -271,16 +265,13 @@ boucleInitCoordFoyers: ; Initialisation des coordonnées des foyers
 
     movzx rsi,word[i] ; On met i dans rsi pour pouvoir l'utiliser dans les tableaux car on ne peut pas utiliser word[i] directement (pas 2 variables sur la même ligne)
 
-    mov di,401 ; On met 401 dans di car c'est la valeur maximale que l'on peut avoir pour les coordonnées (taille de la fenêtre) + 1 (on ajoute +1 par rapport à l'opcode rdrand), je fais pas la même technique de l'incrémentation car le 0 est une coordonée possible pour la fenêtre
+    mov di,400 ; On met 400 dans di car la valeur maximale que l'on peut avoir pour les coordonnées (taille de la fenêtre) - 1 (car pixel de 0 à 399 --> je fais pas la même technique de l'incrémentation car le 0 est une coordonée possible pour la fenêtre)
     call random ; On appelle notre fonction random qui permet de générer des nombres aléatoires
     mov word[coordFoyersX+rsi*WORD],ax ; Le retour de la fonction se fait dans le registre ax donc on stocke le coordonnée que l'on a généré dans le tableau coordFoyersX à l'indice rsi (i)
-    
 
-    mov di,401
+    mov di,400
     call random
-    mov word[coordFoyersY+rsi*WORD],ax
-
-    
+    mov word[coordFoyersY+rsi*WORD],ax    
 
     inc word[i] ; Ici on incrémente i pour passer au foyer suivant
 
@@ -294,16 +285,14 @@ boucleInitCoordPoints: ; Initialisation des coordonnées des points, tous pareil
 
     movzx rsi,word[i]
 
-    mov di,401
+    mov di,400
     call random
     mov word[coordPointsX+rsi*WORD],ax
     
 
-    mov di,401
+    mov di,400
     call random
     mov word[coordPointsY+rsi*WORD],ax
-
-   
 
     inc word[i]
 
@@ -327,16 +316,11 @@ boucleExplorePoints:
     mov [y1],eax
 
     mov dword[minDistance],400 ; On met minDistance à 400 car ça sera la distance maximale théoriquement possible entre un point et son foyer le plus proche
-
    
     ; Maintenant qu'on a stocké les coordonnées du point courant dans x1 et y1 on va explorer chacun de nos foyers pour trouver le foyer le plus proche
-
     boucleExploreFoyers:
 
         movzx esi,word[j]
-        
-
-
         
         movzx edi,word[coordFoyersX+esi*WORD] ; On met les coordonnées X du foyer courant dans edi
         movzx esi,word[coordFoyersY+esi*WORD] ; On met les coordonnées Y du foyer courant dans esi
@@ -346,7 +330,6 @@ boucleExplorePoints:
         call calculDistance ; Maintenant qu'on a mis nos paramètres (edi, esi, edx, ecx) on peut appeler notre fonction calculDistance qui va nous retourner la distance entre le point courant et le foyer courant
 
         movzx esi,word[j] ; On remet j dans esi pour pouvoir l'utiliser dans les tableaux, je ne sais pas pourquoi mais push et pop ne fonctionnaient pas donc j'ai fait ça
-
         
         cmp eax,dword[minDistance] ; On compare la distance qu'on a récupéré via notre fonction calculDistance (résultat stocké dans eax) avec la distance minimale qu'on a trouvé jusqu'à présent
         jb ifDistanceInf ; Si la distance avec le foyer courant est strictement inférieur au précédent minimum alors on saute à ifDistanceInf
@@ -391,9 +374,9 @@ boucleExplorePoints:
     jb boucleExplorePoints ; Si i < nbPoints-1 alors on recommence la boucle pour explorer le prochain point, si non alors on sort de cette boucle
 
 
-
-
-
+flush:
+mov rdi, qword[display_name]
+call XFlush
 mov rax,34
 syscall
 
@@ -418,13 +401,12 @@ xor dx,dx ; Permet de mettre dx à 0 afin d'éviter des conflits avec les valeur
 rdrand ax ; On utilise rdrand pour générer un nombre aléatoire, rdrand pren un registre d'au moins 16 bits et génére un nb dans ce range, ici on le stocke dans ax
 div di ; Comme en C, afin d'avoir un range précis il faut récupérer le reste du nombre généré par di (le nombre max qu'on veut) pour avoir un nombre entre 0 et di. Div di met le reste de ax/di dans dx, dx sera notre nb aléatoire entre 0 et di-1
 
+mov ax,dx ; On met la valeur de retour de la fonction dans ax (convention)
 
-mov ax,dx
-
-ret
+ret ; Fin de la fonction
 
 
-global calculDistance
+global calculDistance ; La fonction calculDistance calcule la distance entre 2 points sur un plan
 calculDistance:
 
 ; On passe par des registres 32 bits pour pouvoir utiliser mul sans risque de dépassement électrique
@@ -441,26 +423,10 @@ mul eax ; On multiplie le résultat de la soustraction par lui même pour obteni
 
 add ebx,eax ; en gros là j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
 
+cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
+sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
 
-
-mov ecx, 0
-xor rax,rax ; on met rax à 0 pour éviter des conflits avec des valeurs précédemment stockés
-
-boucleRacineCarrée: ; Le principe de cette boucle est de tester la puissance de chaque nombre à partir de 1 jusqu'à ce que la puissance soit suppérieur à la somme de (x1-x2)² + (y1-y2)² 
-
-inc ecx ; On incrémente à chaque tour de boucle pour tester chaque puissance
-
-mov eax,ecx ; Je mets ecx dans eax car mul utilise tjrs que eax à quand une update svp ????
-mul eax ; on fait la îossance
-
-cmp eax,ebx ; Je compare notre valeur avec la somme des deux carrés obtenu précédemment ( (x1-x2)² + (y1-y2)² )
-jg finBoucleRacineCarrée ; Si notre valeur est supérieur à la somme des deux carrés alors on sort de la boucle
-
-jmp boucleRacineCarrée ; Sinon je recommence la boucle
-
-finBoucleRacineCarrée :
-dec ecx  ; On soustrait 1 à ecx pour revenir à la puissance précédente qui était inférieur à la somme des deux carrés car on fait une racine carrée approximative
-mov eax,ecx ; On met ecx dans eax car return de la fonction
+cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
 
 
 ret
