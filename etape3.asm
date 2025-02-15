@@ -65,18 +65,26 @@ y1:	dd	0
 y2:	dd	0
 
 ; Nos variables initialisées
-colors: dd 0x9400d3, 0x7c1ddc, 0x653ae5, 0x4d56ed, 0x3673f6, 0x1e90ff
+colors1: dd 0x5766ac, 0x566e9c, 0x56758b, 0x557d7b, 0x55846a, 0x548c5a ; Une couleur = 3 octets donc DWORD (4 octets), dégradé bleu vers vert
+colors2: dd 0xb56590, 0xb3669f, 0xb267ae, 0xb069bd, 0xaf6acc, 0x0ad6bdb ; Dégradé de rose vers violet
+colors3: dd 0xe5e355, 0xdcd153, 0xd3bf51, 0xcaae4f, 0xc19c4d, 0xaf6acc; Dégradé de jaune vers orange
 
 maxFoyer: dw 200
 maxPoint: dw 30000
 minDistance: dd 0
+numPaletteChoisie: db 0
 
 demandeSiFoyerRandom: db "Voulez-vous que le nombre de foyer soit déterminé aléatoirement (1 si oui, autre si non) : ",0
 demandeSiPointsRandom: db "Voulez-vous que le nombre de points soit déterminé aléatoirement (1 si oui, autre si non) : ",0
 demandeNbFoyer : db "Entrez le nombre de foyer (entre 1 et 200) : ",0
 demandeNbPoints : db "Entrez le nombre de points (entre 1 et 30000): ",0
+décritPalette1: db "1 : Dégradé de bleu vers vert",10,0
+décritPalette2: db "2 : Dégradé de rose vers violet",10,0
+décritPalette3: db "3 : Dégradé de jaune vers orange",10,0
+demandeDégradéCouleur : db "Choisissez le dégradé de couleur que vous voulez : ",0
 reponseValeurRandomFoyer: db "Le nombre de foyer est de : %d",10,0
 reponseValeurRandomPoints: db "Le nombre de points est de : %d",10,0
+reponseDégradéCouleur: db "La palette de couleur choisie est la numéro :",10,0
 fmt_scan: db "%d",0
 
 i: dw 0
@@ -231,7 +239,7 @@ call random
 inc ax
 mov word[nbPoints],ax
 
-jmp affichageValeurs
+jmp paletteCouleur
 
 pointsRandomNo:
 
@@ -251,6 +259,36 @@ mov ax,word[maxPoint]
 cmp word[nbPoints],ax
 jg pointsRandomNo
 
+paletteCouleur:
+
+mov rdi,décritPalette1
+mov rax,0
+call printf
+
+mov rdi,décritPalette2
+mov rax,0
+call printf
+
+mov rdi,décritPalette3
+mov rax,0
+call printf
+
+demandePalette :
+
+mov rdi, demandeDégradéCouleur
+mov rax, 0
+call printf
+
+mov rdi, fmt_scan
+mov rsi, numPaletteChoisie
+mov rax, 0
+call scanf
+
+cmp byte[numPaletteChoisie], 1
+jl demandePalette
+
+cmp byte[numPaletteChoisie], 3
+jg demandePalette
 
 affichageValeurs:
 
@@ -263,6 +301,45 @@ mov rdi,reponseValeurRandomPoints
 movzx rsi,word[nbPoints]
 mov rax,0 
 call printf
+
+mov rdi,reponseDégradéCouleur
+mov rax,0
+call printf
+
+cmp byte[numPaletteChoisie], 1
+je palette1Affichage
+
+cmp byte[numPaletteChoisie], 2
+je palette2Affichage
+
+cmp byte[numPaletteChoisie], 3
+je palette3Affichage
+
+
+palette1Affichage:
+
+mov rdi, décritPalette1
+mov rax, 0
+call printf
+
+jmp initialisation
+
+palette2Affichage:
+
+mov rdi, décritPalette2
+mov rax, 0
+call printf
+
+jmp initialisation
+
+palette3Affichage:
+
+mov rdi, décritPalette3
+mov rax, 0
+call printf
+
+
+initialisation:
 
 pop rbp
 
@@ -360,8 +437,27 @@ boucleExplorePoints:
     mov di,6
     call random ; On génére un nombre aléatoire entre 0 et 5 afin de choisir une couleur aléatoire dans le tableau colors
     
-    mov ebx,dword[colors+eax*DWORD] ; On stocke la couleur dans ebx
+    cmp byte[numPaletteChoisie], 1
+    je palette1
 
+    cmp byte[numPaletteChoisie], 2
+    je palette2
+
+    cmp byte[numPaletteChoisie], 3
+    je palette3
+
+    palette1:
+    mov ebx,dword[colors1+eax*DWORD] ; On stocke la couleur dans ebx
+    jmp changeColor
+
+    palette2:
+    mov ebx,dword[colors2+eax*DWORD] ; On stocke la couleur dans ebx
+    jmp changeColor
+
+    palette3:
+    mov ebx,dword[colors3+eax*DWORD] ; On stocke la couleur dans ebx
+
+    changeColor:
     mov rdi,qword[display_name]
     mov rsi,qword[gc]
     mov edx, ebx	
