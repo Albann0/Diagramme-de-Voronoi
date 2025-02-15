@@ -359,7 +359,7 @@ boucleExplorePointsX :
     jb boucleExplorePointsX
 
 flush:
-mov rdi,qword[display_name] ; TEMPORAIREMENT ENLEVE CAR FAIT ERREUR DE SEGMENTATION, retourne en haut et re exécute tout ????
+mov rdi,qword[display_name] 
 call XFlush
 mov rax,34
 syscall
