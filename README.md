@@ -26,4 +26,3 @@ gcc -fPIC -no-pie etape3.o random.o calculDistance.o -o etape3 -lX11
 gcc -fPIC -no-pie etape4.o random.o calculDistance.o -o etape4 -lX11
 
 
-(où X le numéro de votre étape)
