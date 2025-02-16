@@ -13,6 +13,10 @@ extern XDrawLine
 extern XDrawPoint
 extern XNextEvent
 
+; Nos fonctions
+extern calculDistance
+extern random
+
 ; external functions from stdio library (ld-linux-x86-64.so.2)    
 extern printf
 extern scanf
@@ -31,6 +35,7 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
+%define TAILLE_FENETRE 1000
 
 section .bss
 
@@ -68,7 +73,7 @@ y2:	dd	0
 ; Nos variables initialisées
 maxFoyer: dw 200 ; Le nombre maximum de foyer qu'on autorise dans le programme
 maxPoint: dw 30000 ; Le nombre maximum de points qu'on autorise dans le programme
-minDistance: dd 0 ; La distance minimale entre un point et un foyer, on la met à 0 pour l'instant parce qu'az pk pas
+minDistance: dw 0 ; La distance minimale entre un point et un foyer, on la met à 0 pour l'instant parce qu'az pk pas
 
 demandeSiFoyerRandom: db "Voulez-vous que le nombre de foyer soit déterminé aléatoirement (1 si oui, autre si non) : ",0
 demandeSiPointsRandom: db "Voulez-vous que le nombre de points soit déterminé aléatoirement (1 si oui, autre si non) : ",0
@@ -110,8 +115,8 @@ mov rdi,qword[display_name]
 mov rsi,rbx
 mov rdx,10
 mov rcx,10
-mov r8,400	; largeur
-mov r9,400	; hauteur
+mov r8,TAILLE_FENETRE	; largeur
+mov r9,TAILLE_FENETRE	; hauteur
 push 0xFFFFFF	; background  0xRRGGBB
 push 0x00FF00
 push 1
@@ -154,6 +159,7 @@ jmp boucle
 ;#		DEBUT DE LA ZONE DE DESSIN		 # Ici c'est notre code ! C'est principalement de l'algo, on intervient sur la fenêtre uniquement afin de dessiner des lignes
 ;#########################################
 push rbp ; Pour faire fonctionner le printf et le scanf il faut push rbp et pop rbp autour de notre code, c'est pour ça que c'est ici. Le pop rbp est à la ligne 257.
+
 dessin:
 
 ; Si le flag est à 1 alors on saute à la fin de notre code pour éviter de dessiner 2 fois (erreur de segmentation)
@@ -165,104 +171,104 @@ mov byte[flag],1 ; On met le flag à 1
 ; On demande à l'utilisateur si il veut que le nombre de foyer et soit déterminé aléatoirement
 foyerRandomYesOrNo:
 
-mov rdi,demandeSiFoyerRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiFoyerRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
 
-cmp byte[reponse],1 
-jne foyerRandomNo  ; Si l'utilisateur entre autre chose que 1 alors on passe à foyerRandomNo qui permet de demander à l'utilisateur le nombre de foyer qu'il veut
+    cmp byte[reponse],1 
+    jne foyerRandomNo  ; Si l'utilisateur entre autre chose que 1 alors on passe à foyerRandomNo qui permet de demander à l'utilisateur le nombre de foyer qu'il veut
 
 foyerRandomYes :
 
-mov di,word[maxFoyer]
-call random
-inc ax ; On incrémente ax car on ne veut pas 0 foyer
-mov word[nbFoyer],ax
+    movzx rdi,word[maxFoyer]
+    call random
+    inc ax ; On incrémente ax car on ne veut pas 0 foyer
+    mov word[nbFoyer],ax
 
-jmp pointsRandomYesOrNo ; On saute à la suite (même chose que pour les foyers mais pour les points)
+    jmp pointsRandomYesOrNo ; On saute à la suite (même chose que pour les foyers mais pour les points)
 
 
 
 foyerRandomNo: 
 
-mov rdi,demandeNbFoyer
-mov rax,0
-call printf
+    mov rdi,demandeNbFoyer
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,nbFoyer
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,nbFoyer
+    mov rax,0
+    call scanf
 
-cmp word[nbFoyer],1
-jl foyerRandomNo ; on le renvoie chez sa mère
+    cmp word[nbFoyer],1
+    jl foyerRandomNo ; on le renvoie chez sa mère
 
-mov ax,word[maxFoyer]
-cmp word[nbFoyer],ax
-jg foyerRandomNo ; t'essayes de nous niquer encore ? jsuis dans le train g pas ton temps
+    mov ax,word[maxFoyer]
+    cmp word[nbFoyer],ax
+    jg foyerRandomNo ; t'essayes de nous niquer encore ? jsuis dans le train g pas ton temps
 
 
 
 ; On demande à l'utilisateur si il veut que le nombre de points soit déterminé aléatoirement
 pointsRandomYesOrNo:
 
-mov rdi,demandeSiPointsRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiPointsRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
- 
-cmp byte[reponse],1 ; Si l'utilisateur entre autre chose que 1 alors on passe à pointsRandomNo qui permet de demander à l'utilisateur le nombre de foyer qu'il veut
-jne pointsRandomNo
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
+    
+    cmp byte[reponse],1 ; Si l'utilisateur entre autre chose que 1 alors on passe à pointsRandomNo qui permet de demander à l'utilisateur le nombre de foyer qu'il veut
+    jne pointsRandomNo
 
 pointsRandomYes:
 
-mov di,word[maxPoint]
-call random
-inc ax ; On incrémente ax car on ne veut pas 0 point
-mov word[nbPoints],ax
+    movzx rdi,word[maxPoint]
+    call random
+    inc ax ; On incrémente ax car on ne veut pas 0 point
+    mov word[nbPoints],ax
 
-jmp affichageValeurs ; On saute à l'affichage des valeurs utilisés pour les foyers et les points
+    jmp affichageValeurs ; On saute à l'affichage des valeurs utilisés pour les foyers et les points
 
 pointsRandomNo:
 
-mov rdi,demandeNbPoints
-mov rax,0
-call printf
+    mov rdi,demandeNbPoints
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,nbPoints
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,nbPoints
+    mov rax,0
+    call scanf
 
-cmp word[nbPoints],1
-jl pointsRandomNo
+    cmp word[nbPoints],1
+    jl pointsRandomNo
 
-mov ax,word[maxPoint]
-cmp word[nbPoints],ax
-jg pointsRandomNo
+    mov ax,word[maxPoint]
+    cmp word[nbPoints],ax
+    jg pointsRandomNo
 
 
 ; Ici on affiche le nombre de foyers et de points utilisés
 affichageValeurs:
 
-mov rdi,reponseValeurRandomFoyer 
-movzx rsi,word[nbFoyer]
-mov rax,0 
-call printf
+    mov rdi,reponseValeurRandomFoyer 
+    movzx rsi,word[nbFoyer]
+    mov rax,0 
+    call printf
 
-mov rdi,reponseValeurRandomPoints
-movzx rsi,word[nbPoints]
-mov rax,0 
-call printf
+    mov rdi,reponseValeurRandomPoints
+    movzx rsi,word[nbPoints]
+    mov rax,0 
+    call printf
 
 pop rbp ; POP, bye bye les printfs
 
@@ -273,11 +279,11 @@ boucleInitCoordFoyers: ; Initialisation des coordonnées des foyers
 
     movzx rsi,word[i] ; On met i dans rsi pour pouvoir l'utiliser dans les tableaux car on ne peut pas utiliser word[i] directement (pas 2 variables sur la même ligne)
 
-    mov di,400 ; On met 400 dans di car la valeur maximale que l'on peut avoir pour les coordonnées (taille de la fenêtre) - 1 (car pixel de 0 à 399 --> je fais pas la même technique de l'incrémentation car le 0 est une coordonée possible pour la fenêtre)
+    mov edi,TAILLE_FENETRE ; On met TAILLE_FENETRE dans di car la valeur maximale que l'on peut avoir pour les coordonnées (taille de la fenêtre) - 1 (car pixel de 0 à TAILLE_FENETRE - 1 --> je fais pas la même technique de l'incrémentation car le 0 est une coordonée possible pour la fenêtre)
     call random ; On appelle notre fonction random qui permet de générer des nombres aléatoires
     mov word[coordFoyersX+rsi*WORD],ax ; Le retour de la fonction se fait dans le registre ax donc on stocke le coordonnée que l'on a généré dans le tableau coordFoyersX à l'indice rsi (i)
 
-    mov di,400
+    mov edi,TAILLE_FENETRE
     call random
     mov word[coordFoyersY+rsi*WORD],ax    
 
@@ -293,12 +299,12 @@ boucleInitCoordPoints: ; Initialisation des coordonnées des points, tous pareil
 
     movzx rsi,word[i]
 
-    mov di,400
+    mov edi,TAILLE_FENETRE
     call random
     mov word[coordPointsX+rsi*WORD],ax
     
 
-    mov di,400
+    mov edi,TAILLE_FENETRE
     call random
     mov word[coordPointsY+rsi*WORD],ax
 
@@ -323,7 +329,7 @@ boucleExplorePoints:
     movzx eax,word[coordPointsY+esi*WORD] ; On met les coordonnées Y du point courant dans eax afin d'ensuite stocker cette coordonnée dans y1
     mov [y1],eax
 
-    mov dword[minDistance],400 ; On met minDistance à 400 car ça sera la distance maximale théoriquement possible entre un point et son foyer le plus proche
+    mov word[minDistance],TAILLE_FENETRE ; On met minDistance à TAILLE_FENETRE car ça sera la distance maximale théoriquement possible entre un point et son foyer le plus proche
    
     ; Maintenant qu'on a stocké les coordonnées du point courant dans x1 et y1 on va explorer chacun de nos foyers pour trouver le foyer le plus proche
     boucleExploreFoyers:
@@ -339,14 +345,14 @@ boucleExplorePoints:
 
         movzx esi,word[j] ; On remet j dans esi pour pouvoir l'utiliser dans les tableaux, je ne sais pas pourquoi mais push et pop ne fonctionnaient pas donc j'ai fait ça
         
-        cmp eax,dword[minDistance] ; On compare la distance qu'on a récupéré via notre fonction calculDistance (résultat stocké dans eax) avec la distance minimale qu'on a trouvé jusqu'à présent
+        cmp ax,word[minDistance] ; On compare la distance qu'on a récupéré via notre fonction calculDistance (résultat stocké dans eax) avec la distance minimale qu'on a trouvé jusqu'à présent
         jb ifDistanceInf ; Si la distance avec le foyer courant est strictement inférieur au précédent minimum alors on saute à ifDistanceInf
 
         jmp incJ ; On arrive ici si la distance avec le foyer courant est supérieur ou égale à la distance minimale qu'on a trouvé jusqu'à présent,, on fait alors un saut inconditionnel afin d'incrémenter j et de passer au foyer suivant
 
         ifDistanceInf:
         
-        mov dword[minDistance],eax ; On met dans minDistance la nouvelle distance minimale qu'on vient de trouver
+        mov word[minDistance],ax ; On met dans minDistance la nouvelle distance minimale qu'on vient de trouver
 
         movzx eax,word[coordFoyersX+esi*WORD]
         mov dword[x2],eax ; On met le nouveau coordonée X du foyer le plus proche dans x2
@@ -383,11 +389,11 @@ boucleExplorePoints:
 
 
 flush:
-mov rdi, qword[display_name]
-call XFlush
-jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
-mov rax,34
-syscall
+    mov rdi, qword[display_name]
+    call XFlush
+    jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
+    mov rax,34
+    syscall
 
 closeDisplay:
     mov     rax,qword[display_name]
@@ -402,43 +408,10 @@ closeDisplay:
 
 
 
-global random  ; La fonction random permet de générer des nombres aléatoires entre 0 et la valeur passée en paramètre (di)
-random:
 
 
-xor dx,dx ; Permet de mettre dx à 0 afin d'éviter des conflits avec les valeurs précédentes
-rdrand ax ; On utilise rdrand pour générer un nombre aléatoire, rdrand pren un registre d'au moins 16 bits et génére un nb dans ce range, ici on le stocke dans ax
-div di ; Comme en C, afin d'avoir un range précis il faut récupérer le reste du nombre généré par di (le nombre max qu'on veut) pour avoir un nombre entre 0 et di. Div di met le reste de ax/di dans dx, dx sera notre nb aléatoire entre 0 et di-1
-
-mov ax,dx ; On met la valeur de retour de la fonction dans ax (convention)
-
-ret ; Fin de la fonction
 
 
-global calculDistance ; La fonction calculDistance calcule la distance entre 2 points sur un plan
-calculDistance:
-
-; On passe par des registres 32 bits pour pouvoir utiliser mul sans risque de dépassement électrique
-
-mov eax,edi ; On met les coordonnées X du foyer courant dans eax
-sub eax,edx ; On soustrait les coordonnées X du point courant à celles du foyer courant
-mul eax ; On multiplie le résultat de la soustraction par lui même pour obtenir le carré de la distance entre les coordonnées X du point et du foyer
-mov ebx,eax ; mul marche que avec ax donc pas le choix de stocker dans ebx pour la suite
-
-mov eax,esi ; On met les coordonnées Y du foyer courant dans eax
-sub eax,ecx ; On soustrait les coordonnées Y du point courant à celles du foyer courant
-mul eax ; On multiplie le résultat de la soustraction par lui même pour obtenir le carré de la distance entre les coordonnées Y du point et du foyer
-
-
-add ebx,eax ; en gros là j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
-
-cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
-sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
-
-cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
-
-
-ret
 
 
 
