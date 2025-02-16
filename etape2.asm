@@ -13,6 +13,10 @@ extern XDrawLine
 extern XDrawPoint
 extern XNextEvent
 
+; Nos fonctions
+extern calculDistance
+extern random
+
 ; external functions from stdio library (ld-linux-x86-64.so.2)    
 extern printf
 extern scanf
@@ -31,6 +35,8 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
+%define TAILLE_FENETRE 505
+%define NB_COLOR 6
 
 section .bss
 
@@ -68,7 +74,8 @@ y2:	dd	0
 ; Nos variables initialisées
 colors1: dd 0x5766ac, 0x566e9c, 0x56758b, 0x557d7b, 0x55846a, 0x548c5a ; Une couleur = 3 octets donc DWORD (4 octets), dégradé bleu vers vert
 colors2: dd 0xb56590, 0xb3669f, 0xb267ae, 0xb069bd, 0xaf6acc, 0x0ad6bdb ; Dégradé de rose vers violet
-colors3: dd 0xe5e355, 0xdcd153, 0xd3bf51, 0xcaae4f, 0xc19c4d, 0xaf6acc; Dégradé de jaune vers orange
+colors3: dd 0xe5e355, 0xded553, 0xd7c752, 0xcfb850, 0xc8aa4f, 0xc19c4d; Dégradé de jaune vers orange
+
 maxFoyer: dw 200
 maxPoint: dw 30000
 minDistance: dd 0
@@ -120,8 +127,8 @@ mov rdi,qword[display_name]
 mov rsi,rbx
 mov rdx,10
 mov rcx,10
-mov r8,400	; largeur
-mov r9,400	; hauteur
+mov r8,TAILLE_FENETRE	; largeur
+mov r9,TAILLE_FENETRE	; hauteur
 push 0xFFFFFF	; background  0xRRGGBB
 push 0x00FF00
 push 1
@@ -174,167 +181,167 @@ mov byte[flag],1 ; On met le flag à 1
 
 foyerRandomYesOrNo:
 
-mov rdi,demandeSiFoyerRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiFoyerRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
 
-cmp byte[reponse],1
-jne foyerRandomNo
+    cmp byte[reponse],1
+    jne foyerRandomNo
 
 
 foyerRandomYes :
 
-mov di,word[maxFoyer]
-call random
-inc ax
-mov word[nbFoyer],ax
+    movzx rdi,word[maxFoyer]
+    call random
+    inc ax
+    mov word[nbFoyer],ax
 
-jmp pointsRandomYesOrNo
+    jmp pointsRandomYesOrNo
 
 foyerRandomNo:
 
-mov rdi,demandeNbFoyer
-mov rax,0
-call printf
+    mov rdi,demandeNbFoyer
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,nbFoyer
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,nbFoyer
+    mov rax,0
+    call scanf
 
-cmp word[nbFoyer],1
-jl foyerRandomNo
+    cmp word[nbFoyer],1
+    jl foyerRandomNo
 
-mov ax,word[maxFoyer]
-cmp word[nbFoyer],ax
-jg foyerRandomNo
+    mov ax,word[maxFoyer]
+    cmp word[nbFoyer],ax
+    jg foyerRandomNo
 
 
 pointsRandomYesOrNo:
 
-mov rdi,demandeSiPointsRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiPointsRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
 
-cmp byte[reponse],1
-jne pointsRandomNo
+    cmp byte[reponse],1
+    jne pointsRandomNo
 
 pointsRandomYes:
 
-mov di,word[maxPoint]
-call random
-inc ax
-mov word[nbPoints],ax
+    movzx rdi,word[maxPoint]
+    call random
+    inc ax
+    mov word[nbPoints],ax
 
-jmp paletteCouleur
+    jmp paletteCouleur
 
 pointsRandomNo:
 
-mov rdi,demandeNbPoints
-mov rax,0
-call printf
+    mov rdi,demandeNbPoints
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,nbPoints
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,nbPoints
+    mov rax,0
+    call scanf
 
-cmp word[nbPoints],1
-jl pointsRandomNo
+    cmp word[nbPoints],1
+    jl pointsRandomNo
 
-mov ax,word[maxPoint]
-cmp word[nbPoints],ax
-jg pointsRandomNo
+    mov ax,word[maxPoint]
+    cmp word[nbPoints],ax
+    jg pointsRandomNo
 
 paletteCouleur:
 
-mov rdi,décritPalette1
-mov rax,0
-call printf
+    mov rdi,décritPalette1
+    mov rax,0
+    call printf
 
-mov rdi,décritPalette2
-mov rax,0
-call printf
+    mov rdi,décritPalette2
+    mov rax,0
+    call printf
 
-mov rdi,décritPalette3
-mov rax,0
-call printf
+    mov rdi,décritPalette3
+    mov rax,0
+    call printf
 
 demandePalette :
 
-mov rdi, demandeDégradéCouleur
-mov rax, 0
-call printf
+    mov rdi, demandeDégradéCouleur
+    mov rax, 0
+    call printf
 
-mov rdi, fmt_scan
-mov rsi, numPaletteChoisie
-mov rax, 0
-call scanf
+    mov rdi, fmt_scan
+    mov rsi, numPaletteChoisie
+    mov rax, 0
+    call scanf
 
-cmp byte[numPaletteChoisie], 1
-jl demandePalette
+    cmp byte[numPaletteChoisie], 1
+    jl demandePalette
 
-cmp byte[numPaletteChoisie], 3
-jg demandePalette
+    cmp byte[numPaletteChoisie], 3
+    jg demandePalette
 
 
 affichageValeurs:
 
-mov rdi,reponseValeurRandomFoyer 
-movzx rsi,word[nbFoyer]
-mov rax,0 
-call printf
+    mov rdi,reponseValeurRandomFoyer 
+    movzx rsi,word[nbFoyer]
+    mov rax,0 
+    call printf
 
-mov rdi,reponseValeurRandomPoints
-movzx rsi,word[nbPoints]
-mov rax,0 
-call printf
+    mov rdi,reponseValeurRandomPoints
+    movzx rsi,word[nbPoints]
+    mov rax,0 
+    call printf
 
-mov rdi,reponseDégradéCouleur
-mov rax,0
-call printf
+    mov rdi,reponseDégradéCouleur
+    mov rax,0
+    call printf
 
-cmp byte[numPaletteChoisie], 1
-je palette1Affichage
+    cmp byte[numPaletteChoisie], 1
+    je palette1Affichage
 
-cmp byte[numPaletteChoisie], 2
-je palette2Affichage
+    cmp byte[numPaletteChoisie], 2
+    je palette2Affichage
 
-cmp byte[numPaletteChoisie], 3
-je palette3Affichage
+    cmp byte[numPaletteChoisie], 3
+    je palette3Affichage
 
 
-palette1Affichage:
+    palette1Affichage:
 
-mov rdi, décritPalette1
-mov rax, 0
-call printf
+        mov rdi, décritPalette1
+        mov rax, 0
+        call printf
 
-jmp initialisation
+    jmp initialisation
 
-palette2Affichage:
+    palette2Affichage:
 
-mov rdi, décritPalette2
-mov rax, 0
-call printf
+        mov rdi, décritPalette2
+        mov rax, 0
+        call printf
 
-jmp initialisation
+    jmp initialisation
 
-palette3Affichage:
+    palette3Affichage:
 
-mov rdi, décritPalette3
-mov rax, 0
-call printf
+        mov rdi, décritPalette3
+        mov rax, 0
+        call printf
 
 
 initialisation:
@@ -347,11 +354,11 @@ boucleInitCoordFoyers:
 
     movzx rsi,word[i]
 
-    mov di,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordFoyersX+rsi*WORD],ax
     
-    mov di,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordFoyersY+rsi*WORD],ax
 
@@ -367,7 +374,7 @@ boucleInitColorFoyers:
 
     movzx rsi,word[i]
 
-    mov di,6
+    mov rdi,NB_COLOR
     call random
 
     cmp byte[numPaletteChoisie], 1
@@ -409,11 +416,11 @@ boucleInitCoordPoints:
 
     movzx rsi,word[i]
 
-    mov di,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordPointsX+rsi*WORD],ax
 
-    mov di,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordPointsY+rsi*WORD],ax
 
@@ -436,7 +443,7 @@ boucleExplorePoints:
     movzx eax,word[coordPointsY+esi*WORD]
     mov [y1],eax
 
-    mov dword[minDistance],400
+    mov dword[minDistance],TAILLE_FENETRE
 
     boucleExploreFoyers:
 
@@ -501,11 +508,11 @@ boucleExplorePoints:
 
 
 flush:
-mov rdi,qword[display_name] 
-call XFlush
-jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
-mov rax,34
-syscall
+    mov rdi,qword[display_name] 
+    call XFlush
+    jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
+    mov rax,34
+    syscall
 
 closeDisplay:
     mov     rax,qword[display_name]
@@ -515,44 +522,6 @@ closeDisplay:
     call    exit
 	
 
-
-
-
-
-
-global random 
-random:
-
-xor dx,dx
-rdrand ax
-div di ; reste de ax/di dans dx
-
-mov ax,dx
-
-ret
-
-
-global calculDistance
-calculDistance:
-
-mov eax,edi
-sub eax,edx
-mul eax
-mov ebx,eax ; mul marche que avec ax donc pas le choix de stocker dans bx
-
-mov eax,esi
-sub eax,ecx
-mul eax
-
-
-add ebx,eax ; en gros j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
-
-cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
-sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
-
-cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
-
-ret
 
 
 
