@@ -17,13 +17,13 @@ nasm -felf64 -Fdwarf -g -l random.lst random.asm -o random.o
 
 nasm -felf64 -Fdwarf -g -l calculDistance.lst calculDistance.asm -o calculDistance.o
 
-gcc -fPIC -no-pie etape1.o random.o calculDistance.o -o etape1
+gcc -fPIC -no-pie etape1.o random.o calculDistance.o -o etape1 -lX11
 
-gcc -fPIC -no-pie etape2.o random.o calculDistance.o -o etape2
+gcc -fPIC -no-pie etape2.o random.o calculDistance.o -o etape2 -lX11
 
-gcc -fPIC -no-pie etape3.o random.o calculDistance.o -o etape3
+gcc -fPIC -no-pie etape3.o random.o calculDistance.o -o etape3 -lX11
 
-gcc -fPIC -no-pie etape4.o random.o calculDistance.o -o etape4
+gcc -fPIC -no-pie etape4.o random.o calculDistance.o -o etape4 -lX11
 
 
 (où X le numéro de votre étape)
