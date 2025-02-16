@@ -13,6 +13,10 @@ extern XDrawLine
 extern XDrawPoint
 extern XNextEvent
 
+; Nos fonctions
+extern calculDistance
+extern random
+
 ; external functions from stdio library (ld-linux-x86-64.so.2)    
 extern printf
 extern scanf
@@ -31,6 +35,9 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
+%define TAILLE_FENETRE 751
+%define NB_COLOR 15
+%define MAX_HEXA_COLOR 16777216
 
 section .bss
 ; Les variables non initialisées du prof
@@ -48,8 +55,8 @@ gc:		resq	1
 coordFoyersX: resw 200
 coordFoyersY: resw 200
 foyerColor: resd 200 ; Tableau qui contiendra la couleur de chaque foyer
-coordPointsX: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
-coordPointsY: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
+coordPointsX: resw TAILLE_FENETRE ; Tableau de taille TAILLE_FENETRE car coordonnées de 0 à 399
+coordPointsY: resw TAILLE_FENETRE ; Tableau de taille TAILLE_FENETRE car coordonnées de 0 à 399
 colors: resd 15 ; Tableau qui contiendra nos couleurs utilisés dans l'instance du programme
 
 nbFoyer: resw 1
@@ -114,8 +121,8 @@ mov rdi,qword[display_name]
 mov rsi,rbx
 mov rdx,10
 mov rcx,10
-mov r8,400	; largeur
-mov r9,400	; hauteur
+mov r8,TAILLE_FENETRE	; largeur
+mov r9,TAILLE_FENETRE	; hauteur
 push 0xFFFFFF	; background  0xRRGGBB
 push 0x00FF00
 push 1
@@ -168,120 +175,125 @@ mov byte[flag],1 ; On met le flag à 1
 
 foyerRandomYesOrNo:
 
-mov rdi,demandeSiFoyerRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiFoyerRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
 
-cmp byte[reponse],1
-jne foyerRandomNo
+    cmp byte[reponse],1
+    jne foyerRandomNo
 
 foyerRandomYes :
 
 
-movzx edi,word[maxFoyer]
-call random
-inc ax
-mov word[nbFoyer],ax
+    movzx rdi,word[maxFoyer]
+    call random
+    inc ax
+    mov word[nbFoyer],ax
 
-jmp colorRandomYesorNo
+    jmp colorRandomYesorNo
 
 foyerRandomNo:
 
-mov rdi,demandeNbFoyer
-mov rax,0
-call printf
+    mov rdi,demandeNbFoyer
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,nbFoyer
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,nbFoyer
+    mov rax,0
+    call scanf
 
-cmp word[nbFoyer],1
-jl foyerRandomNo
+    cmp word[nbFoyer],1
+    jl foyerRandomNo
 
-mov ax,word[maxFoyer]
-cmp word[nbFoyer],ax
-jg foyerRandomNo
+    mov ax,word[maxFoyer]
+    cmp word[nbFoyer],ax
+    jg foyerRandomNo
 
 colorRandomYesorNo:
 
-mov rdi,demandeSiCouleurRandom
-mov rax,0
-call printf
+    mov rdi,demandeSiCouleurRandom
+    mov rax,0
+    call printf
 
-mov rdi,fmt_scan
-mov rsi,reponse
-mov rax,0
-call scanf
+    mov rdi,fmt_scan
+    mov rsi,reponse
+    mov rax,0
+    call scanf
 
-mov word[i],0
+    mov word[i],0
 
-cmp byte[reponse],1
-jne colorRandomNo
+    cmp byte[reponse],1
+    je colorRandomYes
 
-cmp byte[reponse],1
-je colorRandomYes
-
-colorRandomNo:
-movzx rsi,word[i]
-mov eax,dword[colorsDefault+rsi*DWORD]
-mov dword[colors+rsi*DWORD],eax
-
-inc word[i]
-mov ax,word[i]
-cmp ax,15
-jb colorRandomNo
-jmp affichageValeurs
-
+    cmp byte[reponse],1
+    jne colorRandomNo
 
 colorRandomYes:
 
     movzx rsi,word[i]
 
-    mov edi, 16777216  ; 0xFFFFFF + 1 pour inclure 0xFFFFFF car random ne prend pas en compte la borne supérieure
+    mov rdi, MAX_HEXA_COLOR  ; 0xFFFFFF + 1 pour inclure 0xFFFFFF car random ne prend pas en compte la borne supérieure
     call random
     mov dword[colors+esi*DWORD],eax
 
     inc word[i]
 
     mov ax,word[i]
-    cmp ax,15
+    cmp ax,NB_COLOR
     jb colorRandomYes
+    jmp affichageValeurs
+    
+
+colorRandomNo:
+
+    movzx rsi,word[i]
+
+    mov eax,dword[colorsDefault+rsi*DWORD]
+    mov dword[colors+rsi*DWORD],eax
+
+    inc word[i]
+    mov ax,word[i]
+    cmp ax,NB_COLOR
+    jb colorRandomNo
+    jmp affichageValeurs
+
+
+
 
 
 affichageValeurs:
 
-mov rdi,reponseValeurRandomFoyer 
-movzx rsi,word[nbFoyer]
-mov rax,0 
-call printf
+    mov rdi,reponseValeurRandomFoyer 
+    movzx rsi,word[nbFoyer]
+    mov rax,0 
+    call printf
 
-mov word[i],0
+    mov word[i],0
 
-mov rdi,reponseCouleurs
-mov rax,0
-call printf
+    mov rdi,reponseCouleurs
+    mov rax,0
+    call printf
 
 affichageCouleurs:
-movzx rbx,word[i]
 
-mov rdi, reponseCouleursHexa
-mov esi,[colors+rbx*DWORD]
-mov rax,0
-call printf
+    movzx rbx,word[i]
 
-inc word[i]
-mov ax,word[i]
-cmp ax,15
-jb affichageCouleurs
+    mov rdi, reponseCouleursHexa
+    mov esi,[colors+rbx*DWORD]
+    mov rax,0
+    call printf
 
+    inc word[i]
+    mov ax,word[i]
+    cmp ax,15
+    jb affichageCouleurs
 
-mov rdi,reponseCouleursHexa
 
 
 pop rbp
@@ -292,11 +304,11 @@ boucleInitCoordFoyers:
 
     movzx rsi,word[i]
     
-    mov edi,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordFoyersX+rsi*WORD],ax
 
-    mov di,400
+    mov rdi,TAILLE_FENETRE
     call random
     mov word[coordFoyersY+rsi*WORD],ax
 
@@ -306,20 +318,18 @@ boucleInitCoordFoyers:
     cmp ax,word[nbFoyer]
     jb boucleInitCoordFoyers 
 
+
 mov word[i],0
-
-
 
 boucleInitColorFoyers:
 
     movzx rsi,word[i]
 
-    mov edi,15
+    mov rdi,NB_COLOR
     call random
     mov ebx,dword[colors+eax*DWORD]
     mov dword[foyerColor+rsi*DWORD],ebx
 
-    
 
     inc word[i]
 
@@ -342,7 +352,7 @@ boucleInitCoordPoints:
     inc word[i]
 
     mov ax,word[i]
-    cmp ax,400
+    cmp ax,TAILLE_FENETRE
     jb boucleInitCoordPoints
 
 mov word[i],0
@@ -365,7 +375,7 @@ boucleExplorePointsX :
         mov [y1],eax
 
 
-        mov dword[minDistance],400
+        mov dword[minDistance],TAILLE_FENETRE
 
         mov word[k],0
 
@@ -429,21 +439,21 @@ boucleExplorePointsX :
         inc word[j]
 
         mov ax,word[j]
-        cmp ax,400
+        cmp ax,TAILLE_FENETRE
         jb boucleExplorePointsY
 
     inc word[i]
 
     mov ax,word[i]
-    cmp ax,400
+    cmp ax,TAILLE_FENETRE
     jb boucleExplorePointsX
 
 flush:
-mov rdi,qword[display_name] 
-call XFlush
-jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
-mov rax,34
-syscall
+    mov rdi,qword[display_name] 
+    call XFlush
+    jmp boucle ; On retourne à la boucle des events pour attendre un nouvel évènement
+    mov rax,34
+    syscall
 
 closeDisplay:
     mov     rax,qword[display_name]
@@ -452,46 +462,3 @@ closeDisplay:
     xor	    rdi,rdi
     call    exit
 	
-
-
-
-
-
-
-global random 
-random:
-
-xor edx,edx
-rdrand eax
-div edi ; reste de ax/di dans dx
-mov eax,edx
-
-ret
-
-
-global calculDistance
-calculDistance:
-
-mov eax,edi
-sub eax,edx
-mul eax
-mov ebx,eax ; mul marche que avec ax donc pas le choix de stocker dans bx
-
-mov eax,esi
-sub eax,ecx
-mul eax
-
-
-add ebx,eax ; en gros j'ai fait (x1-x2)² + (y1-y2)² il faut encore que je calcule la racine carré de ça pour trouver la distance
-
-cvtsi2ss xmm0,ebx ; On met ebx dans xmm0 pour pouvoir utiliser sqrtss
-sqrtss xmm1,xmm0 ; On met ecx dans eax car return de la fonction
-
-cvtss2si eax,xmm1 ; On met le résultat de la racine carrée dans eax pour pouvoir le retourner
-
-
-ret
-
-
-
-
