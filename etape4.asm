@@ -50,7 +50,7 @@ coordFoyersY: resw 200
 foyerColor: resd 200 ; Tableau qui contiendra la couleur de chaque foyer
 coordPointsX: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
 coordPointsY: resw 400 ; Tableau de taille 400 car coordonnées de 0 à 399
-
+colors: resd 15 ; Tableau qui contiendra nos couleurs utilisés dans l'instance du programme
 
 nbFoyer: resw 1
 reponse: resb 1
@@ -65,16 +65,20 @@ y1:	dd	0
 y2:	dd	0
 
 ; Nos variables initialisées
-colors: dd 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0x800000, 0x808000, 0x008000, 0x800080, 0x008080, 0x000080, 0xC0C0C0, 0xFFA500, 0xA52A2A  
+colorsDefault: dd 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0x800000, 0x808000, 0x008000, 0x800080, 0x008080, 0x000080, 0xC0C0C0, 0xFFA500, 0xA52A2A  ; Palette de couleur par défaut
 
 maxFoyer: dw 200
 maxPoint: dw 30000
 minDistance: dd 0
 indiceFoyerMin : dw 0
+colorRandomOrNot: db 0
 
 demandeSiFoyerRandom: db "Voulez-vous que le nombre de foyer soit déterminé aléatoirement (1 si oui, autre si non) : ",0
-demandeNbFoyer : db "Entrez le nombre de foyer (entre 1 et 200) : ",0
+demandeNbFoyer: db "Entrez le nombre de foyer (entre 1 et 200) : ",0
+demandeSiCouleurRandom: db "Voulez-vous que la couleur des foyers soit déterminée aléatoirement (1 si oui, autre pour les couleurs par défaut) : ",0
 reponseValeurRandomFoyer: db "Le nombre de foyer est de : %d",10,0
+reponseCouleurs: db "Les couleurs des foyers sont :",10,0
+reponseCouleursHexa: db "0x%x",10,0
 fmt_scan: db "%d",0
 
 i: dw 0
@@ -179,12 +183,12 @@ jne foyerRandomNo
 foyerRandomYes :
 
 
-mov di,word[maxFoyer]
+movzx edi,word[maxFoyer]
 call random
 inc ax
 mov word[nbFoyer],ax
 
-jmp affichageValeurs
+jmp colorRandomYesorNo
 
 foyerRandomNo:
 
@@ -204,6 +208,50 @@ mov ax,word[maxFoyer]
 cmp word[nbFoyer],ax
 jg foyerRandomNo
 
+colorRandomYesorNo:
+
+mov rdi,demandeSiCouleurRandom
+mov rax,0
+call printf
+
+mov rdi,fmt_scan
+mov rsi,reponse
+mov rax,0
+call scanf
+
+mov word[i],0
+
+cmp byte[reponse],1
+jne colorRandomNo
+
+cmp byte[reponse],1
+je colorRandomYes
+
+colorRandomNo:
+movzx rsi,word[i]
+mov eax,dword[colorsDefault+rsi*DWORD]
+mov dword[colors+rsi*DWORD],eax
+
+inc word[i]
+mov ax,word[i]
+cmp ax,15
+jb colorRandomNo
+jmp affichageValeurs
+
+
+colorRandomYes:
+
+    movzx rsi,word[i]
+
+    mov edi, 16777216  ; 0xFFFFFF + 1 pour inclure 0xFFFFFF car random ne prend pas en compte la borne supérieure
+    call random
+    mov dword[colors+esi*DWORD],eax
+
+    inc word[i]
+
+    mov ax,word[i]
+    cmp ax,15
+    jb colorRandomYes
 
 
 affichageValeurs:
@@ -213,15 +261,38 @@ movzx rsi,word[nbFoyer]
 mov rax,0 
 call printf
 
+mov word[i],0
+
+mov rdi,reponseCouleurs
+mov rax,0
+call printf
+
+affichageCouleurs:
+movzx rbx,word[i]
+
+mov rdi, reponseCouleursHexa
+mov esi,[colors+rbx*DWORD]
+mov rax,0
+call printf
+
+inc word[i]
+mov ax,word[i]
+cmp ax,15
+jb affichageCouleurs
+
+
+mov rdi,reponseCouleursHexa
+
 
 pop rbp
 
+mov word[i],0
 
 boucleInitCoordFoyers:
 
     movzx rsi,word[i]
-
-    mov di,400
+    
+    mov edi,400
     call random
     mov word[coordFoyersX+rsi*WORD],ax
 
@@ -237,11 +308,13 @@ boucleInitCoordFoyers:
 
 mov word[i],0
 
+
+
 boucleInitColorFoyers:
 
     movzx rsi,word[i]
 
-    mov di,25
+    mov edi,15
     call random
     mov ebx,dword[colors+eax*DWORD]
     mov dword[foyerColor+rsi*DWORD],ebx
@@ -388,10 +461,10 @@ closeDisplay:
 global random 
 random:
 
-xor dx,dx
-rdrand ax
-div di ; reste de ax/di dans dx
-mov ax,dx
+xor edx,edx
+rdrand eax
+div edi ; reste de ax/di dans dx
+mov eax,edx
 
 ret
 
