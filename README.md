@@ -26,3 +26,10 @@ gcc -fPIC -no-pie etape3.o random.o calculDistance.o -o etape3 -lX11
 gcc -fPIC -no-pie etape4.o random.o calculDistance.o -o etape4 -lX11
 
 
+
+La taille de la fenêtre est par défaut de 400x400, si vous souhaitez changer cela il faut ajouter ça dans l'assemblage du fichier etapeX.asm : -dTAILLE_FENETRE=XXX où X la valeur que vous souhaitez comme taille de fenêtre.
+
+Exemple : 
+nasm -felf64 -Fdwarf -g -l etape4.lst etape4.asm -o etape4.o -dTAILLE_FENETRE=1000
+
+
