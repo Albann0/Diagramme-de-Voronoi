@@ -36,7 +36,7 @@ extern exit
 %define WORD	2
 %define BYTE	1
 %ifndef TAILLE_FENETRE
-	%define TAILLE_FENETRE 1000
+	%define TAILLE_FENETRE 400
 %endif
 %define NB_COLOR 6
 
