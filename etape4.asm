@@ -35,7 +35,9 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
-%define TAILLE_FENETRE 751
+%ifndef TAILLE_FENETRE
+	%define TAILLE_FENETRE 1000
+%endif
 %define NB_COLOR 15
 %define MAX_HEXA_COLOR 16777216
 
