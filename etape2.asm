@@ -35,7 +35,9 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
-%define TAILLE_FENETRE 505
+%ifndef TAILLE_FENETRE
+	%define TAILLE_FENETRE 1000
+%endif
 %define NB_COLOR 6
 
 section .bss
