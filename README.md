@@ -33,6 +33,6 @@ Exemple :
 nasm -felf64 -Fdwarf -g -l etape4.lst etape4.asm -o etape4.o -dTAILLE_FENETRE=1000
 
 
-https://www.cburch.com/csbsju/cs/350/docs/nasm/nasmdoc2.html#section-2.1.8
+doc du -d de nasm : https://www.cburch.com/csbsju/cs/350/docs/nasm/nasmdoc2.html#section-2.1.8
 
 
